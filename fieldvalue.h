@@ -2,7 +2,12 @@
 #define FIELDVALUE_H
 
 #include <cstdlib>
+#include <iostream>
 #include <ostream>
+#include <vector>
+
+#include <boost/shared_ptr.hpp>
+#include <boost/foreach.hpp>
 
 #include "dataqueue.h"
 
@@ -11,12 +16,15 @@ class FieldValueBase
 public:
     virtual ~FieldValueBase();
     
-    virtual void update();
+    virtual void update() = 0;
     virtual void serializeTo(std::ostream& output) = 0;
+    virtual void serializeNthValueTo(size_t index, std::ostream& output) = 0;
     
 protected:
     FieldValueBase();
 };
+
+typedef boost::shared_ptr<FieldValueBase> FieldValueBase_ptr;
 
 template<typename DataSource>
 class FieldValue : public FieldValueBase
@@ -35,6 +43,11 @@ public:
     void serializeTo(std::ostream& output)
     {
         output << dataValue;
+    }
+    
+    void serializeNthValueTo(size_t index, std::ostream& output)
+    {
+        output << '(' << index << ',' << dataValue << ')';
     }
     
 private:
@@ -104,7 +117,7 @@ public:
 };
 
 template<typename ValueType>
-class MultiFieldValue
+class MultiFieldValue : public FieldValueBase
 {
 public:
     typedef ValueType value_type;
@@ -113,14 +126,41 @@ public:
     :repeat(repeatCount)
     {
     }
+
+    size_t repeatCount() const { return repeat; }
     
-    void addField(FieldValueBase* fv);
+    void addField(FieldValueBase_ptr fv)
+    {
+        fields.push_back(fv);
+    }
     
-    void update();
-    value_type getValueByIndex(size_t idx);
- 
- private:
+    void update()
+    {
+        BOOST_FOREACH(FieldValueBase_ptr fv, fields)
+        {
+            fv->update();
+        }
+    }
+
+    void serializeTo(std::ostream& output)
+    {
+        for(size_t i=0; i<repeat; ++i)
+        {
+            serializeNthValueTo(i, output);
+        }
+    }
+    
+    void serializeNthValueTo(size_t index, std::ostream& output)
+    {
+        BOOST_FOREACH(FieldValueBase_ptr fv, fields)
+        {
+            fv->serializeNthValueTo(index, output);
+        }
+    }
+
+    private:
     size_t repeat;
+    std::vector<FieldValueBase_ptr> fields;
 };
 
 typedef FieldValue<FromDefault> FieldValueDefault;
@@ -148,4 +188,42 @@ void testFromInput()
     std::size_t length = bitsetFromInput.getBitsetLength();
 }
 
+void testMultiFields()
+{
+    DataQueue       dataQueue[10] = { 1,2,3,4,5,6,7,8,9,10 };
+
+    MultiFieldValue<DataQueue::value_type> single(1);
+    single.addField(FieldValueBase_ptr(new FieldValueFromInput(FromQueue(&dataQueue[0]))));
+
+    single.update();
+
+    std::cout << "\n---- MultiField(repeat=1) ----\n";
+    single.serializeTo(std::cout);
+    std::cout << "\n----------------\n";
+
+    const size_t numFields = 3;
+    MultiFieldValue<DataQueue::value_type> threeFields(numFields);
+    for(int i=0; i<5; ++i)
+        threeFields.addField(FieldValueBase_ptr(new FieldValueFromInput(FromQueue(&dataQueue[i+1]))));
+    threeFields.update();
+    std::cout << "\n---- MultiField(repeat=" << threeFields.repeatCount() <<") ----\n";
+    threeFields.serializeTo(std::cout);
+    std::cout << "\n---------------------\n";
+}
+
+int runAllTests()
+{
+    try
+    {
+    testDefault();
+    testFromInput();
+    testMultiFields();
+    return 1;
+    }
+    catch(...)
+    {
+        std::cerr << "Exception in runAllTests()\n";
+    }
+    return -1;
+}
 #endif
