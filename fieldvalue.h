@@ -10,6 +10,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp>
+#include <boost/dynamic_bitset.hpp>
 
 #include <gtest/gtest.h>
 
@@ -111,7 +112,8 @@ private:
 class BitSetValue : public FieldValueBase
 {
 private:
-  typedef std::pair<size_t, FieldValueBase_ptr> SizeAndField;
+  typedef boost::dynamic_bitset<unsigned char> DynamicBitset;
+  typedef std::pair<DynamicBitset, FieldValueBase_ptr> SizeAndField;
 
 public:
   struct IllegalSize : public std::exception {};
@@ -125,7 +127,7 @@ public:
 
   void addBits(size_t numBits, FieldValueBase_ptr fv)
   {
-    bits.push_back(std::make_pair(numBits, fv));
+    bits.push_back(std::make_pair(DynamicBitset(numBits), fv));
     checkSize();
   }
 
@@ -139,6 +141,10 @@ public:
 
   void serializeTo(std::ostream& output)
   {
+    BOOST_FOREACH(SizeAndField saf, bits)
+    {
+      DataQueue::value_type val;
+    }
   }
 
   void serializeNthValueTo(size_t,std::ostream &)
@@ -150,7 +156,7 @@ private:
   {
     size_t operator()(size_t size, const SizeAndField& saf) const
     {
-      return size+saf.first;
+      return size+saf.first.size();
     }
   };
 
