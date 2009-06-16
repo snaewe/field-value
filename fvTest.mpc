@@ -1,0 +1,11 @@
+project(*) : boost_base {
+	exename = *
+	Source_Files {
+		*.cpp
+		gtest
+	}
+	Header_Files {
+		*.h
+		gtest
+	}
+}

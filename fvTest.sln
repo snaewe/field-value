@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FvTest", "FvTest.vcproj", "{694546BE-FECA-1BAD-2246-8C709579B038}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
+		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{694546BE-FECA-1BAD-2246-8C709579B038}.Debug|Win32.ActiveCfg = Debug|Win32
+		{694546BE-FECA-1BAD-2246-8C709579B038}.Debug|Win32.Build.0 = Debug|Win32
+		{694546BE-FECA-1BAD-2246-8C709579B038}.Debug|x64.ActiveCfg = Debug|x64
+		{694546BE-FECA-1BAD-2246-8C709579B038}.Debug|x64.Build.0 = Debug|x64
+		{694546BE-FECA-1BAD-2246-8C709579B038}.Release|Win32.ActiveCfg = Release|Win32
+		{694546BE-FECA-1BAD-2246-8C709579B038}.Release|Win32.Build.0 = Release|Win32
+		{694546BE-FECA-1BAD-2246-8C709579B038}.Release|x64.ActiveCfg = Release|x64
+		{694546BE-FECA-1BAD-2246-8C709579B038}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

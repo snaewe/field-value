@@ -1,0 +1,108 @@
+#----------------------------------------------------------------------------
+#       Macros
+#----------------------------------------------------------------------------
+CFG = Debug
+
+ifeq ($(CFG), Debug)
+CXX           = g++
+LD            = $(CXX) $(CCFLAGS) $(CPPFLAGS)
+AR            = ar
+PICFLAGS      = -fPIC
+CPPFLAGS      = $(PICFLAGS) $(GENFLAGS) -D_REENTRANT -I"$(BOOST_ROOT)/include/$(BOOST_VERSION)" -I"$(BOOST_ROOT)/."
+OBJEXT        = .o
+OUTPUT_OPTION = -o "$@"
+COMPILE.cc    = $(CXX) $(CCFLAGS) $(CPPFLAGS) -c
+LDFLAGS       = -L"." -L"$(BOOST_ROOT)/lib"
+CCC           = $(CXX)
+MAKEFILE      = Makefile.FvTest
+DEPENDENCIES  = .depend.$(MAKEFILE)
+BTARGETDIR    = ./
+BIN           = $(BTARGETDIR)FvTest$(EXESUFFIX)$(EXEEXT)
+CAT           = cat
+MV            = mv -f
+RM            = rm -rf
+CP            = cp -p
+NUL           = /dev/null
+MKDIR         = mkdir -p
+TESTDIRSTART  = test -d
+TESTDIREND    = ||
+EXEEXT        = 
+LIBPREFIX     = lib
+LIBSUFFIX     = d
+GENFLAGS      = -g
+LDLIBS        = -ldl $(subst lib,-l,$(sort $(basename $(notdir $(wildcard /usr/lib/librt.so /lib/librt.so))))) -lpthread
+OBJS          = fieldvalue$(OBJEXT) gtest/gtest-all$(OBJEXT)
+SRC           = fieldvalue.cpp gtest/gtest-all.cc
+LINK.cc       = $(LD) $(LDFLAGS)
+EXPORTFLAGS   = 
+endif
+ifeq ($(CFG), Release)
+CXX           = g++
+LD            = $(CXX) $(CCFLAGS) $(CPPFLAGS)
+AR            = ar
+PICFLAGS      = -fPIC
+CPPFLAGS      = $(PICFLAGS) $(GENFLAGS) -D_REENTRANT -I"$(BOOST_ROOT)/include/$(BOOST_VERSION)" -I"$(BOOST_ROOT)/."
+OBJEXT        = .o
+OUTPUT_OPTION = -o "$@"
+COMPILE.cc    = $(CXX) $(CCFLAGS) $(CPPFLAGS) -c
+LDFLAGS       = -L"." -L"$(BOOST_ROOT)/lib"
+CCC           = $(CXX)
+MAKEFILE      = Makefile.FvTest
+DEPENDENCIES  = .depend.$(MAKEFILE)
+BTARGETDIR    = ./
+BIN           = $(BTARGETDIR)FvTest$(EXESUFFIX)$(EXEEXT)
+CAT           = cat
+MV            = mv -f
+RM            = rm -rf
+CP            = cp -p
+NUL           = /dev/null
+MKDIR         = mkdir -p
+TESTDIRSTART  = test -d
+TESTDIREND    = ||
+EXEEXT        = 
+LIBPREFIX     = lib
+LIBSUFFIX     = 
+GENFLAGS      = -O
+LDLIBS        = -ldl $(subst lib,-l,$(sort $(basename $(notdir $(wildcard /usr/lib/librt.so /lib/librt.so))))) -lpthread
+OBJS          = fieldvalue$(OBJEXT) gtest/gtest-all$(OBJEXT)
+SRC           = fieldvalue.cpp gtest/gtest-all.cc
+LINK.cc       = $(LD) $(LDFLAGS)
+EXPORTFLAGS   = 
+endif
+
+#----------------------------------------------------------------------------
+#       Local targets
+#----------------------------------------------------------------------------
+
+all: $(BIN)
+
+$(BIN): $(OBJS)
+	@$(TESTDIRSTART) "$(BTARGETDIR)" $(TESTDIREND) $(MKDIR) "$(BTARGETDIR)"
+	$(LINK.cc) $(OBJS) $(LDLIBS) $(OUTPUT_OPTION)
+
+generated: $(GENERATED_DIRTY)
+	@-:
+
+fieldvalue$(OBJEXT): fieldvalue.cpp
+	$(COMPILE.cc) $(EXPORTFLAGS) $(OUTPUT_OPTION) fieldvalue.cpp
+
+gtest/gtest-all$(OBJEXT): gtest/gtest-all.cc
+	$(COMPILE.cc) $(EXPORTFLAGS) $(OUTPUT_OPTION) gtest/gtest-all.cc
+
+clean:
+	-$(RM) $(OBJS)
+
+realclean: clean
+	-$(RM) $(BIN)
+
+#----------------------------------------------------------------------------
+#       Dependencies
+#----------------------------------------------------------------------------
+
+$(DEPENDENCIES):
+	@touch $(DEPENDENCIES)
+
+depend:
+	-$(MPC_ROOT)/depgen.pl  $(CFLAGS) $(CCFLAGS) $(CPPFLAGS) -f $(DEPENDENCIES) $(SRC) 2> $(NUL)
+
+include $(DEPENDENCIES)
