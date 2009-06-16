@@ -9,6 +9,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp>
 
+#include <gtest/gtest.h>
+
 #include "dataqueue.h"
 
 class FieldValueBase
@@ -168,17 +170,19 @@ typedef FieldValue<FromQueue> FieldValueFromInput;
 typedef BitSetValue<FromDefault> BitsetFieldValueDefault;
 typedef BitSetValue<FromQueue> BitsetFieldValueFromInput;
 
-void testDefault()
+TEST(FieldValueTest, Default)
 {
     DataQueue::value_type value;
     FromDefault defaultSource(value);
     FieldValueDefault   fromDefault(defaultSource);
     BitsetFieldValueDefault bitsetFromDefault(defaultSource, 8, 3);
     std::size_t bits = bitsetFromDefault.getBits();
+    ASSERT_EQ(bits, 3);
     std::size_t length = bitsetFromDefault.getBitsetLength();
+    ASSERT_EQ(length, 8);
 }
 
-void testFromInput()
+TEST(FieldValueTest, FromInput)
 {
     DataQueue       dataQueue;
     FromQueue  queueSource(&dataQueue);
@@ -188,7 +192,7 @@ void testFromInput()
     std::size_t length = bitsetFromInput.getBitsetLength();
 }
 
-void testMultiFields()
+TEST(FieldValueTest, MultiFields)
 {
     DataQueue       dataQueue[10] = { 1,2,3,4,5,6,7,8,9,10 };
 
@@ -211,19 +215,4 @@ void testMultiFields()
     std::cout << "\n---------------------\n";
 }
 
-int runAllTests()
-{
-    try
-    {
-    testDefault();
-    testFromInput();
-    testMultiFields();
-    return 1;
-    }
-    catch(...)
-    {
-        std::cerr << "Exception in runAllTests()\n";
-    }
-    return -1;
-}
 #endif
