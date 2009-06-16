@@ -46,12 +46,12 @@ public:
     
     void serializeTo(std::ostream& output)
     {
-        output << dataValue;
+      output << boost::get<long>(dataValue);
     }
     
     void serializeNthValueTo(size_t index, std::ostream& output)
     {
-        output << '(' << index << ',' << dataValue << ')';
+        output << '(' << index << ',' << boost::get<long>(dataValue) << ')';
     }
     
 private:
@@ -269,6 +269,7 @@ TEST(FieldValueTest, MultiFieldsNoRepeat)
     DataQueue       dataQueue;
 
     MultiFieldValue<DataQueue::value_type> single(1);
+    ASSERT_EQ(1, single.repeatCount());
     single.addField(FieldValueBase_ptr(new FieldValueFromInput(FromQueue(&dataQueue))));
 
     single.update();
@@ -285,9 +286,16 @@ TEST(FieldValueTest, MultiFieldsNoRepeat)
 
 TEST(FieldValueTest, MultiFieldsYesRepeat)
 {
-    DataQueue       dataQueue[] = { 1,2,3,4,5,6,7,8,9,10};
-    const size_t numFields = 3;
-    MultiFieldValue<DataQueue::value_type> multi(numFields);
+    DataQueue       dataQueue[10] = { };
+    for(size_t i=0; i<10; ++i)
+    {
+      //dataQueue[i].push(DataQueue::value_type(double(i+1.0)));
+      dataQueue[i].push(DataQueue::value_type(long(i+1)));
+    }
+    const size_t numRepeat = 3;
+    MultiFieldValue<DataQueue::value_type> multi(numRepeat);
+    ASSERT_EQ(numRepeat, multi.repeatCount());
+
     for(int i=0; i<5; ++i)
         multi.addField(FieldValueBase_ptr(new FieldValueFromInput(FromQueue(&dataQueue[i+1]))));
     multi.update();
