@@ -4,7 +4,9 @@
 #include <cstdlib>
 #include <iostream>
 #include <ostream>
+#include <fstream>
 #include <vector>
+#include <numeric>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp>
@@ -109,12 +111,20 @@ private:
 class BitSetValue : public FieldValueBase
 {
 public:
+  struct IllegalSize : public std::exception {};
+
   BitSetValue(std::size_t numBytes)
     :byteCount(numBytes)
   {
   }
 
   std::size_t getNumBytes() const { return byteCount;}
+
+  void addBits(size_t numBits, FieldValueBase_ptr fv)
+  {
+    bits.push_back(std::make_pair(numBits, fv));
+    checkSize();
+  }
 
   void update()
   {
@@ -129,7 +139,26 @@ public:
   }
 
 private:
+  typedef std::pair<size_t, FieldValueBase_ptr> SizeAndField;
+
+  struct GetBitSize
+  {
+    size_t operator()(size_t size, const SizeAndField& saf) const
+    {
+      return size+saf.first;
+    }
+  };
+
+  void checkSize()
+  {
+    size_t bitCount = 0;
+    bitCount = std::accumulate(bits.begin(), bits.end(), bitCount, GetBitSize());
+    if(bitCount > (byteCount*8))
+      throw IllegalSize();//(bitCount, (byteCount*8));
+  }
+
   std::size_t byteCount;
+  std::vector<SizeAndField> bits;
 };
 
 template<typename ValueType>
@@ -202,29 +231,70 @@ TEST(FieldValueTest, BitsetFieldTest)
     BitSetValue bitsetValue(4);
     std::size_t length = bitsetValue.getNumBytes();
     ASSERT_EQ(length, 4);
+
+    DataQueue::value_type value;
+    FromDefault defaultSource;
+    defaultSource.setValue(value);
+    
+    EXPECT_NO_THROW(
+      bitsetValue.addBits(3, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
+      bitsetValue.addBits(1, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
+      bitsetValue.addBits(4, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
+
+      bitsetValue.addBits(3, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
+      bitsetValue.addBits(1, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
+      bitsetValue.addBits(4, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
+
+      bitsetValue.addBits(3, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
+      bitsetValue.addBits(1, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
+      bitsetValue.addBits(4, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
+
+      bitsetValue.addBits(3, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
+      bitsetValue.addBits(1, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
+      bitsetValue.addBits(4, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
+    );
+
+    EXPECT_THROW(
+      bitsetValue.addBits(1, FieldValueBase_ptr(new FieldValueDefault(defaultSource))), 
+      BitSetValue::IllegalSize);
 }
 
-TEST(FieldValueTest, MultiFields)
+TEST(FieldValueTest, MultiFieldsNoRepeat)
 {
-    DataQueue       dataQueue[10] = { 1,2,3,4,5,6,7,8,9,10 };
+    DataQueue       dataQueue;
 
     MultiFieldValue<DataQueue::value_type> single(1);
-    single.addField(FieldValueBase_ptr(new FieldValueFromInput(FromQueue(&dataQueue[0]))));
+    single.addField(FieldValueBase_ptr(new FieldValueFromInput(FromQueue(&dataQueue))));
 
     single.update();
 
-    std::cout << "\n---- MultiField(repeat=1) ----\n";
-    single.serializeTo(std::cout);
-    std::cout << "\n----------------\n";
+    const ::testing::TestInfo* const test_info =
+    ::testing::UnitTest::GetInstance()->current_test_info();
+    std::string ofname(test_info->name());
+    ofname += ".out";
+    std::ofstream output(ofname.c_str());
+    output << "\n---- MultiField(repeat=1) ----\n";
+    single.serializeTo(output);
+    output << "\n----------------\n";
+}
 
+TEST(FieldValueTest, MultiFieldsYesRepeat)
+{
+    DataQueue       dataQueue[] = { 1,2,3,4,5,6,7,8,9,10};
     const size_t numFields = 3;
-    MultiFieldValue<DataQueue::value_type> threeFields(numFields);
+    MultiFieldValue<DataQueue::value_type> multi(numFields);
     for(int i=0; i<5; ++i)
-        threeFields.addField(FieldValueBase_ptr(new FieldValueFromInput(FromQueue(&dataQueue[i+1]))));
-    threeFields.update();
-    std::cout << "\n---- MultiField(repeat=" << threeFields.repeatCount() <<") ----\n";
-    threeFields.serializeTo(std::cout);
-    std::cout << "\n---------------------\n";
+        multi.addField(FieldValueBase_ptr(new FieldValueFromInput(FromQueue(&dataQueue[i+1]))));
+    multi.update();
+
+    const ::testing::TestInfo* const test_info =
+    ::testing::UnitTest::GetInstance()->current_test_info();
+    std::string ofname(test_info->name());
+    ofname += ".out";
+    std::ofstream output(ofname.c_str());
+    output << "\n---- MultiField(repeat=" << multi.repeatCount() <<") ----\n";
+    multi.serializeTo(output);
+    output << "\n---------------------\n";
 }
 
 #endif
