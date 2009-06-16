@@ -1,11 +1,12 @@
 project(*) : boost_base {
 	exename = *
+        includes += .
 	Source_Files {
 		*.cpp
-		gtest
+		gtest/gtest-all.cc
 	}
 	Header_Files {
 		*.h
-		gtest
+		gtest/gtest.h
 	}
 }
