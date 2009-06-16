@@ -97,22 +97,30 @@ private:
     value_type  defaultValue;    
 };
 
-template<typename DataSource>
-class BitSetValue : public FieldValue<DataSource>
+class BitSetValue : public FieldValueBase
 {
 public:
-    typedef typename FieldValue<DataSource>::value_type value_type;
+  BitSetValue(std::size_t numBytes)
+    :byteCount(numBytes)
+  {
+  }
 
-    BitSetValue(DataSource const& source, std::size_t numBytes)
-    :FieldValue<DataSource>(source),
-    byteCount(numBytes)
-    {
-    }
-    
-    std::size_t getNumBytes() const { return byteCount;}
+  std::size_t getNumBytes() const { return byteCount;}
 
-  private:
-    std::size_t byteCount;
+  void update()
+  {
+  }
+
+  void serializeTo(std::ostream& output)
+  {
+  }
+
+  void serializeNthValueTo(size_t,std::ostream &)
+  {
+  }
+
+private:
+  std::size_t byteCount;
 };
 
 template<typename ValueType>
@@ -164,26 +172,25 @@ public:
 
 typedef FieldValue<FromDefault> FieldValueDefault;
 typedef FieldValue<FromQueue> FieldValueFromInput;
-typedef BitSetValue<FromDefault> BitsetFieldValueDefault;
-typedef BitSetValue<FromQueue> BitsetFieldValueFromInput;
 
 TEST(FieldValueTest, Default)
 {
     DataQueue::value_type value;
     FromDefault defaultSource(value);
     FieldValueDefault   fromDefault(defaultSource);
-    BitsetFieldValueDefault bitsetFromDefault(defaultSource, 2);
-    std::size_t length = bitsetFromDefault.getNumBytes();
-    ASSERT_EQ(length, 2);
 }
 
 TEST(FieldValueTest, FromInput)
 {
-    DataQueue       dataQueue;
-    FromQueue  queueSource(&dataQueue);
-    FieldValueFromInput fromInput(queueSource);
-    BitsetFieldValueFromInput bitsetFromInput(queueSource, 4);
-    std::size_t length = bitsetFromInput.getNumBytes();
+    DataQueue input;
+    FromQueue fromQueue(&input);
+    FieldValueFromInput valueFromInput(fromQueue);
+}
+
+TEST(FieldValueTest, BitsetFieldTest)
+{
+    BitSetValue bitsetValue(4);
+    std::size_t length = bitsetValue.getNumBytes();
     ASSERT_EQ(length, 4);
 }
 
