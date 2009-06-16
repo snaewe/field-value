@@ -216,6 +216,11 @@ public:
 typedef FieldValue<FromDefault> FieldValueDefault;
 typedef FieldValue<FromQueue> FieldValueFromInput;
 
+const ::testing::TestInfo* const get_test_info()
+{
+  return ::testing::UnitTest::GetInstance()->current_test_info();
+}
+
 TEST(FieldValueTest, Default)
 {
     DataQueue::value_type value;
@@ -300,8 +305,7 @@ TEST(FieldValueTest, MultiFieldsYesRepeat)
         multi.addField(FieldValueBase_ptr(new FieldValueFromInput(FromQueue(&dataQueue[i+1]))));
     multi.update();
 
-    const ::testing::TestInfo* const test_info =
-    ::testing::UnitTest::GetInstance()->current_test_info();
+    const ::testing::TestInfo* const test_info = get_test_info();
     std::string ofname(test_info->name());
     ofname += ".out";
     std::ofstream output(ofname.c_str());
