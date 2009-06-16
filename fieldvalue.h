@@ -40,7 +40,7 @@ public:
     void update() {  dataValue = dataSource.getNextValue(); }
     value_type getValue() const { return dataValue; }
 
-    explicit FieldValue(DataSource const& source)
+    explicit FieldValue(DataSource& source)
     :dataSource(source)
     {
     }
@@ -57,7 +57,7 @@ public:
     
 private:
     value_type  dataValue;
-    DataSource  dataSource;
+    DataSource&  dataSource;
 };
 
 class FromQueue
