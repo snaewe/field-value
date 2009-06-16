@@ -83,11 +83,20 @@ class FromDefault
 public:
     typedef DataQueue::value_type value_type;
     
+    FromDefault()
+    : defaultValue()
+    {
+    }
     explicit FromDefault(const value_type& value)
     : defaultValue(value)
     {
     }
     
+    void setValue(const value_type& value)
+    {
+      defaultValue = value;
+    }
+
     value_type getNextValue()
     {
         return defaultValue;
@@ -176,7 +185,8 @@ typedef FieldValue<FromQueue> FieldValueFromInput;
 TEST(FieldValueTest, Default)
 {
     DataQueue::value_type value;
-    FromDefault defaultSource(value);
+    FromDefault defaultSource;
+    defaultSource.setValue(value);
     FieldValueDefault   fromDefault(defaultSource);
 }
 
