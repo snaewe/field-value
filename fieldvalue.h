@@ -103,19 +103,16 @@ class BitSetValue : public FieldValue<DataSource>
 public:
     typedef typename FieldValue<DataSource>::value_type value_type;
 
-    BitSetValue(DataSource const& source, std::size_t length, std::size_t numBits)
+    BitSetValue(DataSource const& source, std::size_t numBytes)
     :FieldValue<DataSource>(source),
-    bitset_(length),
-    bits_(numBits)
+    byteCount(numBytes)
     {
     }
     
-    std::size_t getBitsetLength() const { return bitset_;}
-    std::size_t getBits() const { return bits_;}
+    std::size_t getNumBytes() const { return byteCount;}
 
   private:
-    std::size_t bitset_;
-    std::size_t bits_;
+    std::size_t byteCount;
 };
 
 template<typename ValueType>
@@ -175,11 +172,9 @@ TEST(FieldValueTest, Default)
     DataQueue::value_type value;
     FromDefault defaultSource(value);
     FieldValueDefault   fromDefault(defaultSource);
-    BitsetFieldValueDefault bitsetFromDefault(defaultSource, 8, 3);
-    std::size_t bits = bitsetFromDefault.getBits();
-    ASSERT_EQ(bits, 3);
-    std::size_t length = bitsetFromDefault.getBitsetLength();
-    ASSERT_EQ(length, 8);
+    BitsetFieldValueDefault bitsetFromDefault(defaultSource, 2);
+    std::size_t length = bitsetFromDefault.getNumBytes();
+    ASSERT_EQ(length, 2);
 }
 
 TEST(FieldValueTest, FromInput)
@@ -187,9 +182,9 @@ TEST(FieldValueTest, FromInput)
     DataQueue       dataQueue;
     FromQueue  queueSource(&dataQueue);
     FieldValueFromInput fromInput(queueSource);
-    BitsetFieldValueFromInput bitsetFromInput(queueSource, 8, 3);
-    std::size_t bits = bitsetFromInput.getBits();
-    std::size_t length = bitsetFromInput.getBitsetLength();
+    BitsetFieldValueFromInput bitsetFromInput(queueSource, 4);
+    std::size_t length = bitsetFromInput.getNumBytes();
+    ASSERT_EQ(length, 4);
 }
 
 TEST(FieldValueTest, MultiFields)
