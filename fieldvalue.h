@@ -110,6 +110,9 @@ private:
 
 class BitSetValue : public FieldValueBase
 {
+private:
+  typedef std::pair<size_t, FieldValueBase_ptr> SizeAndField;
+
 public:
   struct IllegalSize : public std::exception {};
 
@@ -128,6 +131,10 @@ public:
 
   void update()
   {
+    BOOST_FOREACH(SizeAndField saf, bits)
+    {
+      saf.second->update();
+    }
   }
 
   void serializeTo(std::ostream& output)
@@ -139,8 +146,6 @@ public:
   }
 
 private:
-  typedef std::pair<size_t, FieldValueBase_ptr> SizeAndField;
-
   struct GetBitSize
   {
     size_t operator()(size_t size, const SizeAndField& saf) const
@@ -149,12 +154,12 @@ private:
     }
   };
 
-  void checkSize()
+  void checkSize() const
   {
     size_t bitCount = 0;
     bitCount = std::accumulate(bits.begin(), bits.end(), bitCount, GetBitSize());
-    if(bitCount > (byteCount*8))
-      throw IllegalSize();//(bitCount, (byteCount*8));
+    if(bitCount > (getNumBytes()*8))
+      throw IllegalSize();
   }
 
   std::size_t byteCount;
