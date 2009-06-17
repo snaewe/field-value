@@ -122,7 +122,7 @@ public:
 
 private:
   typedef boost::dynamic_bitset<unsigned char> DynamicBitset;
-  typedef std::pair<DynamicBitset, FieldValueBase_ptr> SizeAndField;
+  typedef std::pair<size_t, FieldValueBase_ptr> SizeAndField;
 
 public:
   BitSetValue(std::size_t numBytes)
@@ -139,7 +139,7 @@ public:
 
   void addBits(size_t numBits, FieldValueBase_ptr fv)
   {
-    bits.push_back(std::make_pair(DynamicBitset(numBits), fv));
+    bits.push_back(std::make_pair(numBits, fv));
     checkSize();
   }
 
@@ -153,10 +153,17 @@ public:
 
   void serializeTo(std::ostream& output)
   {
-    BOOST_FOREACH(SizeAndField saf, bits)
+    DynamicBitset dynBuf;
+
+    BOOST_FOREACH(SizeAndField const& saf, bits)
     {
-      DataQueue::value_type val;
+      boost::dynamic_bitset<> val(saf.first, boost::get<long>(saf.second->getValue()));
+      for(size_t i=0; i<val.size(); ++i)
+      {
+        dynBuf.push_back(val[i]);
+      }
     }
+    output << dynBuf;
   }
 
   void serializeNthValueTo(size_t,std::ostream &)
@@ -168,7 +175,7 @@ private:
   {
     size_t operator()(size_t size, const SizeAndField& saf) const
     {
-      return size+saf.first.size();
+      return size+saf.first;
     }
   };
 
