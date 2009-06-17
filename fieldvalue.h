@@ -16,23 +16,25 @@
 
 #include "dataqueue.h"
 
+template<typename ValueType>
 class FieldValueBase
 {
 public:
-    virtual ~FieldValueBase();
+    typedef ValueType value_type;
+
+    virtual ~FieldValueBase()  {}
     
     virtual void update() = 0;
+    virtual value_type getValue() const { return value_type(); }
     virtual void serializeTo(std::ostream& output) = 0;
     virtual void serializeNthValueTo(size_t index, std::ostream& output) = 0;
     
 protected:
-    FieldValueBase();
+  FieldValueBase() {}
 };
 
-typedef boost::shared_ptr<FieldValueBase> FieldValueBase_ptr;
-
 template<typename DataSource>
-class FieldValue : public FieldValueBase
+class FieldValue : public FieldValueBase<typename DataSource::value_type>
 {
 public:
     typedef typename DataSource::value_type value_type;
@@ -109,21 +111,31 @@ private:
     value_type  defaultValue;    
 };
 
-class BitSetValue : public FieldValueBase
+template<typename ValueType>
+class BitSetValue : public FieldValueBase<ValueType>
 {
+public:
+  typedef boost::shared_ptr<FieldValueBase<ValueType> > FieldValueBase_ptr;
+  typedef ValueType value_type;
+
+  struct IllegalSize : public std::exception {};
+
 private:
   typedef boost::dynamic_bitset<unsigned char> DynamicBitset;
   typedef std::pair<DynamicBitset, FieldValueBase_ptr> SizeAndField;
 
 public:
-  struct IllegalSize : public std::exception {};
-
   BitSetValue(std::size_t numBytes)
     :byteCount(numBytes)
   {
   }
 
   std::size_t getNumBytes() const { return byteCount;}
+
+  void addBits(size_t numBits, FieldValueBase<ValueType>* fv)
+  {
+    addBits(numBits, FieldValueBase_ptr(fv));
+  }
 
   void addBits(size_t numBits, FieldValueBase_ptr fv)
   {
@@ -173,9 +185,10 @@ private:
 };
 
 template<typename ValueType>
-class MultiFieldValue : public FieldValueBase
+class MultiFieldValue : public FieldValueBase<ValueType>
 {
 public:
+    typedef boost::shared_ptr<FieldValueBase<ValueType> > FieldValueBase_ptr;
     typedef ValueType value_type;
     
     MultiFieldValue(size_t repeatCount)
@@ -185,6 +198,11 @@ public:
 
     size_t repeatCount() const { return repeat; }
     
+    void addField(FieldValueBase<value_type>* fv)
+    {
+      addField(FieldValueBase_ptr(fv));
+    }
+
     void addField(FieldValueBase_ptr fv)
     {
         fields.push_back(fv);
@@ -244,7 +262,7 @@ TEST(FieldValueTest, FromInput)
 
 TEST(FieldValueTest, BitsetFieldTest)
 {
-    BitSetValue bitsetValue(4);
+  BitSetValue<DataQueue::value_type> bitsetValue(4);
     std::size_t length = bitsetValue.getNumBytes();
     ASSERT_EQ(length, 4);
 
@@ -253,26 +271,26 @@ TEST(FieldValueTest, BitsetFieldTest)
     defaultSource.setValue(value);
     
     EXPECT_NO_THROW(
-      bitsetValue.addBits(3, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
-      bitsetValue.addBits(1, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
-      bitsetValue.addBits(4, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
+      bitsetValue.addBits(3, new FieldValueDefault(defaultSource));
+      bitsetValue.addBits(1, new FieldValueDefault(defaultSource));
+      bitsetValue.addBits(4, new FieldValueDefault(defaultSource));
 
-      bitsetValue.addBits(3, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
-      bitsetValue.addBits(1, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
-      bitsetValue.addBits(4, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
+      bitsetValue.addBits(3, new FieldValueDefault(defaultSource));
+      bitsetValue.addBits(1, new FieldValueDefault(defaultSource));
+      bitsetValue.addBits(4, new FieldValueDefault(defaultSource));
 
-      bitsetValue.addBits(3, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
-      bitsetValue.addBits(1, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
-      bitsetValue.addBits(4, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
+      bitsetValue.addBits(3, new FieldValueDefault(defaultSource));
+      bitsetValue.addBits(1, new FieldValueDefault(defaultSource));
+      bitsetValue.addBits(4, new FieldValueDefault(defaultSource));
 
-      bitsetValue.addBits(3, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
-      bitsetValue.addBits(1, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
-      bitsetValue.addBits(4, FieldValueBase_ptr(new FieldValueDefault(defaultSource)));
+      bitsetValue.addBits(3, new FieldValueDefault(defaultSource));
+      bitsetValue.addBits(1, new FieldValueDefault(defaultSource));
+      bitsetValue.addBits(4, new FieldValueDefault(defaultSource));
     );
 
     EXPECT_THROW(
-      bitsetValue.addBits(1, FieldValueBase_ptr(new FieldValueDefault(defaultSource))), 
-      BitSetValue::IllegalSize);
+      bitsetValue.addBits(1, new FieldValueDefault(defaultSource)), 
+      BitSetValue<DataQueue::value_type>::IllegalSize);
 }
 
 TEST(FieldValueTest, MultiFieldsNoRepeat)
@@ -281,7 +299,7 @@ TEST(FieldValueTest, MultiFieldsNoRepeat)
 
     MultiFieldValue<DataQueue::value_type> single(1);
     ASSERT_EQ(1, single.repeatCount());
-    single.addField(FieldValueBase_ptr(new FieldValueFromInput(FromQueue(&dataQueue))));
+    single.addField(new FieldValueFromInput(FromQueue(&dataQueue)));
 
     single.update();
 
@@ -308,7 +326,7 @@ TEST(FieldValueTest, MultiFieldsYesRepeat)
     ASSERT_EQ(numRepeat, multi.repeatCount());
 
     for(int i=0; i<5; ++i)
-        multi.addField(FieldValueBase_ptr(new FieldValueFromInput(FromQueue(&dataQueue[i+1]))));
+        multi.addField(new FieldValueFromInput(FromQueue(&dataQueue[i+1])));
     multi.update();
 
     const ::testing::TestInfo* const test_info = get_test_info();
